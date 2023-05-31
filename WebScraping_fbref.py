@@ -6,7 +6,7 @@ import lxml
 
 def create_url_season(year):
     """
-    :param year: the year which the seasno start in
+    :param year: the year which the season start in
     :return: a dictionary , the key is the year and the value is the url site of the season
     """
     fbref_site = 'https://fbref.com/en/squads/53a2f082/'
@@ -25,7 +25,7 @@ def get_link_report_match(url):
     :return: list with link to each game in the season
     """
     counter = 0
-    list_links =[]
+    list_links = []
     page = requests.get(url)
     soup = BeautifulSoup(page.content,'html.parser')
     links = soup.find_all('a')
@@ -36,7 +36,7 @@ def get_link_report_match(url):
             list_links.append('https://fbref.com'+str(link.attrs['href']))
     return list_links
 
-def compation_df(url,comp ='La Liga') :
+def compation_df(url,comp ='La Liga',conv_json = True) :
 
     """
     :param url: get url for a specific season ,example:create_url_all_seasons()['2019-2020']
@@ -47,13 +47,33 @@ def compation_df(url,comp ='La Liga') :
     season_df = dfs[1]
     #season_df.drop('Notes', inplace=True, axis=1)# remove column 'Notes'
     season_df = season_df[season_df['Comp'] == comp]
-    season_df['Match Report'] = get_link_report_match(url) # edit the column 'Match Report' with the link of the match report
-    return season_df
+    # edit the column 'Match Report' with the link of the match report
+    season_df['Match Report'] = get_link_report_match(url)
+    #season_df.loc[:,'Match Report'] = get_link_report_match(url)
+    if conv_json:
+        return season_df.to_json(orient='records')
+    else:
+        return season_df
+
+
+def list_df_player_madrid(season):
+    """
+    :param season: the df of the season, example: compation_df(url_season_2019)
+    :return: dataframe of players for each game in the season
+    """
+    list_home_away = [0 if venue == 'Home' else 1 for venue in list(season['Venue'])]
+    list_link_venue = zip(season['Match Report'], list_home_away)
+    list_df_players = []
+    for tup in list_link_venue:
+        link, venue = tup
+        df_match_player = pd.read_html(link)
+        list_df_players.append(df_match_player[venue])
+    return list_df_players
 
 
 if __name__ == '__main__':
     # print(create_url_season(2000))
-    # print(get_link_report_match(create_url_season(2000)['2000-2001']))
     url_season_2019 = create_url_season(2019)['2019-2020']
-    season_2019_2020 = compation_df(url_season_2019)
-    print(season_2019_2020)
+    print(get_link_report_match(url_season_2019))
+    # season_2019_2020 = compation_df(url_season_2019)
+    # print(list_df_player_madrid(season_2019_2020))
