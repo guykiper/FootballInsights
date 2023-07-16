@@ -23,7 +23,7 @@ class WebScraping_fbref:
         self.fbref_site_end = '/all_comps/'+team_name+'-Stats-All-Competitions'
         # self.fbref_site_end = '/Real-Madrid-Stats'
         self.conv_json = conv_json
-        self.dealy_time = 1
+        self.dealy_time = 3
         # self.session = requests.Session()
         # self.retry_strategy = Retry(total=5, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
         # self.adapter = HTTPAdapter(max_retries=self.retry_strategy)
@@ -83,11 +83,12 @@ class WebScraping_fbref:
                 continue
         return pd.Series(list_links)
 
-    def gender_dataframe(self,url):
+    def gender_dataframe(self, url):
         """
         :param url: the url that contanite the dataframe, there are teams of males and females.
         :return: creating a method that will ditermane if the data is about male or female
         """
+        time.sleep(self.dealy_time)
         page = requests.get(url)
         soup = BeautifulSoup(page.content, 'html.parser')
         links = soup.find_all('strong')
@@ -206,10 +207,10 @@ class WebScraping_fbref:
         :param url: get url for a specific season ,example:create_url_all_seasons()['2019-2020']
         :return: return the data frame of the comp that were chosen from the url
         """
-        time.sleep(self.dealy_time)
         # response = self.session.get(url)
         # response.raise_for_status()
         try:
+            time.sleep(self.dealy_time)
             dfs = pd.read_html(url)
             page = requests.get(url)
             soup = BeautifulSoup(page.content, 'html.parser')
@@ -298,6 +299,7 @@ class WebScraping_fbref:
         the goal of this function is to create a file with all the clubs name in each country and the code club
         :return: dictonary with all the information
         """
+        time.sleep(self.dealy_time)
         url = "https://fbref.com/en/squads/"
         response = requests.get(url)
         # Create a BeautifulSoup object to parse the HTML content
@@ -363,29 +365,34 @@ if __name__ == '__main__':
     # Convert JSON data to dictionary
     data = json.loads(json_data)
     counter = 0
-    df_result = pd.DataFrame(columns=['club_name', 'club_code', 'link'])
+    df_result = pd.DataFrame(columns=['country', 'club_name', 'club_code', 'link', 'gender'])
     for country in data.keys():
         for club in data[country]:
+            print(df_result)
             counter = counter +1
             club_name_link = club[0].replace(" ", "-")
             club_code = club[2]
             # web_screp = WebScraping_fbref("Real-Madrid", "53a2f082", conv_json=False)
             web_screp = WebScraping_fbref(club_name_link, club_code, conv_json=False)
+
             link = web_screp.create_url_season(2022)
-            web_screp.gender(link)
+            web_screp.gender_dataframe(link)
             df_games = web_screp.all_compation_df(link)
+            if counter % 100 == 0:
+                print('hi')
+                df_result.to_csv('information_clubs.csv')
             if df_games[0][1].empty:
                 print(counter)
                 print(link)
 
                 continue
-            elif 'Player' in df_games[0].columns:
+            elif 'Player' in df_games[0][1].columns:
                 print(counter)
                 print(web_screp.team_name)
                 print(link)
                 print(df_games[0])
-                new_row = pd.Series([web_screp.team_name, web_screp.code_club, link], index=df_result.columns)
-                df_result = pd.concat([df_result, new_row], ignore_index=True)
+                # new_row = pd.DataFrame([country, web_screp.team_name, web_screp.code_club, link, web_screp.gender], index=df_result.columns)
+                df_result = df_result.append({'country':country , 'club_name':web_screp.team_name, 'club_code':web_screp.code_club, 'link':link, 'gender':web_screp.gender}, ignore_index=True)
                 # df_result = df_result.append(pd.Series([web_screp.team_name, web_screp.code_club, link],index=df_result.columns),ignore_index=True)
 
             else:
