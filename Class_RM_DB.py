@@ -1,13 +1,8 @@
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
-# import regex
-# import lxml
 import json
 import time
-# from requests.adapters import HTTPAdapter
-# from requests.packages.urllib3.util.retry import Retry
-# from urllib3.util import Retry
 from collections import defaultdict
 from Class_ElasticSearch import Elasticsearch_conn
 
@@ -17,28 +12,22 @@ class WebScraping_fbref:
         self.code_club = code_club
         self.team_name = team_name
         self.year = year
-        self.gender = ''
-        self.fbref_site = 'https://fbref.com/en/squads/' + str(code_club) + '/'
-        self.fbref_site_end = '/all_comps/' + team_name + '-Stats-All-Competitions'
         self.conv_json = conv_json
         self.delay_time = 3
-        self.season_url = (self.fbref_site + str(self.year) + '-' + str(self.year + 1) + self.fbref_site_end)
-        # Madrid we will need to change self.fbref_site_end
-        # https://fbref.com/en/squads/53a2f082/2000-2001/all_comps/Real-Madrid-Stats-All-Competitions
-        # self.fbref_site_end = '/Real-Madrid-Stats'
-        # self.session = requests.Session()
-        # self.retry_strategy = Retry(total=5, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
-        # self.adapter = HTTPAdapter(max_retries=self.retry_strategy)
-        # self.session.mount('http://', self.adapter)
-        # self.session.mount('https://', self.adapter)
+        self.link = self.create_url_season()
+        self.gender = ''
+        self.gender_dataframe(self.link)
 
     def create_url_season(self):
         """
         :return: a dictionary , the key is the year and the value is the url site of the season
         """
+        fbref_site = 'https://fbref.com/en/squads/' + str(self.code_club) + '/'
+        fbref_site_end = '/all_comps/' + self.team_name + '-Stats-All-Competitions'
+
         # https://fbref.com/en/squads/53a2f082/2000-2001/all_comps/Real-Madrid-Stats-All-Competitions
         try:
-            season_url = (self.fbref_site + str(self.year) + '-' + str(self.year + 1) + self.fbref_site_end)
+            season_url = (fbref_site + str(self.year) + '-' + str(self.year + 1) + fbref_site_end)
         except Exception as e:
             print(f"An error occurred: {e}")
             season_url = "not found"
@@ -112,10 +101,13 @@ class WebScraping_fbref:
         :return: return the data frame of the comp that were chosen from the url
         """
         time.sleep(self.delay_time)
-        # response = self.session.get(url)
-        # response.raise_for_status()
         dfs = pd.read_html(url)
-        season_df = dfs[1]
+        for df in dfs:
+            if 'Comp' in list(df.columns):
+                season_df = df
+                break
+            else:
+                continue
         # season_df.drop('Notes', inplace=True, axis=1)# remove column 'Notes'
         # season_df = season_df[season_df['Comp'] == comp]
         season_df = season_df.loc[season_df['Comp'] == comp].copy()
@@ -212,8 +204,6 @@ class WebScraping_fbref:
         :param url: get url for a specific season ,example:create_url_all_seasons()['2019-2020']
         :return: return the data frame of the comp that were chosen from the url
         """
-        # response = self.session.get(url)
-        # response.raise_for_status()
         try:
             time.sleep(self.delay_time)
             dfs = pd.read_html(url)
@@ -233,6 +223,13 @@ class WebScraping_fbref:
             df_comp = self.age_transformation(df_comp)
             df_comp = self.nation_transformation(df_comp)
             df_comp['team'] = self.team_name
+            new_column_name = []
+            for col in df_comp.columns:
+                if type(col) == str:
+                    new_column_name.append(col)
+                elif type(col) == tuple:
+                    new_column_name.append(str(col[0] + " - " + col[1]))
+            df_comp.columns = new_column_name
             if self.conv_json:
                 json_data = df_comp.to_json(orient='records')
                 parsed_data = json.loads(json_data)
@@ -255,8 +252,7 @@ class WebScraping_fbref:
         list_link_venue = zip(season['Match Report'], list_home_away)
         test = set(list(list_link_venue))
         list_df_players = []
-        for tup in test:
-            link_inner, venue = tup
+        for link_inner, venue in test:
             try:
                 df_match_player = pd.read_html(link_inner)
                 # list_df_players.append(df_match_player[venue])
@@ -297,10 +293,7 @@ class WebScraping_fbref:
         :param path_name: the path name which could be the file name and the file type: example - output.json
         :return: the function create the file and load to it the data from the dataframe
         """
-        json_str = json.dumps(dataframe)
-        # file_path = "output.json"
-        with open(path_name, "w") as json_file:
-            json_file.write(json_str)
+        dataframe.to_json(path_name, orient="records")
 
     def all_clubs_name(self):
         """
@@ -350,6 +343,48 @@ class WebScraping_fbref:
                     print(f"Error: {e} - {club_iter}")
                     dict_club[country_link[1]].append(("", ""))
         return dict_club
+
+    def df_club_info(self, input_file, output_file):
+
+        with open(input_file, "r") as file:
+            data = file.read()
+        # Convert JSON data to dictionary
+        dictonary_club = json.loads(data)
+        counter = 0
+        df_result = pd.DataFrame(columns=['country', 'club_name', 'club_code', 'link', 'gender', 'year', 'counter'])
+        self.year = 2022
+        for country in dictonary_club.keys():
+            for club in dictonary_club[country]:
+                print(df_result)
+                counter = counter + 1
+                self.team_name = club[0].replace(" ", "-")
+                self.code_club = club[2]
+                # web_screp = WebScraping_fbref("Real-Madrid", "53a2f082", conv_json=False)
+                # web_screp = WebScraping_fbref(club_name_link, club_code, year, conv_json=False)
+                link = self.create_url_season()
+                self.gender_dataframe(link)
+                df_games = self.all_competition_df(link)
+                if counter % 10 == 0:
+                    df_result.to_csv(output_file)
+                if df_games[0][1].empty:
+
+                    continue
+                elif 'Player' in df_games[0][1].columns:
+                    # new_row = pd.DataFrame([country, web_screp.team_name, web_screp.code_club, link, web_screp.gender],
+                    # index=df_result.columns)
+                    if self.code_club in list(df_result['club_code']):
+                        continue
+                    else:
+                        df_result = df_result.append({'country': country, 'club_name': self.team_name,
+                                                      'club_code': self.code_club, 'link': link,
+                                                      'gender': self.gender, 'year': self.year,
+                                                      'counter': counter}, ignore_index=True)
+                    # df_result = df_result.append(pd.Series([web_screp.team_name, web_screp.code_club, link],
+                    # index=df_result.columns),ignore_index=True)
+
+                else:
+                    print(counter)
+
     # def United_Player_dataframe(self, dataframe_list):
     #     """
     #     the goal of this function is to unite all the dataframe of the players from a club to one dataframe
@@ -366,53 +401,58 @@ if __name__ == '__main__':
 
     )
 
-    with open("club_code.json", "r") as file:
-        data = file.read()
-    # Convert JSON data to dictionary
-    dictonary_club = json.loads(data)
-    counter = 0
-    df_result = pd.DataFrame(columns=['country', 'club_name', 'club_code', 'link', 'gender', 'year'])
-    year = 2022
-    for country in dictonary_club.keys():
-        for club in dictonary_club[country]:
-            print(df_result)
-            counter = counter + 1
-            club_name_link = club[0].replace(" ", "-")
-            club_code = club[2]
-            # web_screp = WebScraping_fbref("Real-Madrid", "53a2f082", conv_json=False)
-            web_screp = WebScraping_fbref(club_name_link, club_code, year, conv_json=False)
-
-            link = web_screp.create_url_season()
-            web_screp.gender_dataframe(link)
-            df_games = web_screp.all_competition_df(link)
-            if counter % 10 == 0:
-                print('hi')
-                df_result.to_csv('information_clubs.csv')
-            if df_games[0][1].empty:
-                print(counter)
-                print(link)
-
-                continue
-            elif 'Player' in df_games[0][1].columns:
-                print(counter)
-                print(web_screp.team_name)
-                print(link)
-                print(df_games[0])
-                # new_row = pd.DataFrame([country, web_screp.team_name, web_screp.code_club, link, web_screp.gender],
-                # index=df_result.columns)
-                df_result = df_result.append({'country': country, 'club_name': web_screp.team_name,
-                                              'club_code': web_screp.code_club, 'link': link,
-                                              'gender': web_screp.gender, 'year': web_screp.year}, ignore_index=True)
-                # df_result = df_result.append(pd.Series([web_screp.team_name, web_screp.code_club, link],
-                # index=df_result.columns),ignore_index=True)
-
-            else:
-                print(counter)
+    # web = WebScraping_fbref("", "", 2022, conv_json=False)
+    # # web.df_club_info("club_code.json", "club_2022.csv")
     #
+    # with open("club_code.json", "r") as file:
+    #     data = file.read()
+    # # Convert JSON data to dictionary
+    # dictonary_club = json.loads(data)
+    # counter = 0
+    # df_result = pd.DataFrame(columns=['country', 'club_name', 'club_code', 'link', 'gender', 'year','counter'])
+    # year = 2022
+    # for country in dictonary_club.keys():
+    #     for club in dictonary_club[country]:
+    #         counter = counter + 1
+    #         print(counter)
+    #         if counter <1488:
+    #             continue
+    #         club_name_link = club[0].replace(" ", "-")
+    #         club_code = club[2]
+    #         # web_screp = WebScraping_fbref("Real-Madrid", "53a2f082", conv_json=False)
+    #         web_screp = WebScraping_fbref(club_name_link, club_code, year, conv_json=False)
+    #
+    #         link = web_screp.create_url_season()
+    #         web_screp.gender_dataframe(link)
+    #         df_games = web_screp.all_competition_df(link)
+    #         if counter % 10 == 0:
+    #             print('read to csv')
+    #             df_result.to_csv('information_clubs_1.csv')
+    #         if df_games[0][1].empty:
+    #             print('df is empty')
+    #
+    #             continue
+    #         elif 'Player' in df_games[0][1].columns:
+    #             print('first df containe player')
+    #             # new_row = pd.DataFrame([country, web_screp.team_name, web_screp.code_club, link, web_screp.gender],
+    #             # index=df_result.columns)
+    #             if web_screp.code_club in list(df_result['club_code']):
+    #                 continue
+    #             else:
+    #                 df_result = df_result.append({'country': country, 'club_name': web_screp.team_name,
+    #                                               'club_code': web_screp.code_club, 'link': link,
+    #                                               'gender': web_screp.gender, 'year': web_screp.year,
+    #                                               'counter': counter}, ignore_index=True)
+    #             # df_result = df_result.append(pd.Series([web_screp.team_name, web_screp.code_club, link],
+    #             # index=df_result.columns),ignore_index=True)
+    #
+    #         else:
+    # #
     #             continue
 
     #
-    # web_screp = WebScraping_fbref("Real-Madrid",'53a2f082', conv_json=False)
+    web_screp = WebScraping_fbref("Real-Madrid", '53a2f082', 2022, conv_json=False)
+    print(type(web_screp.competition_df(web_screp.link)))
     # # print(web_screp.create_url_season(2022))
     # #load to elasticsearch
     # link = web_screp.create_url_season(2022)
