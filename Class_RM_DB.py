@@ -459,7 +459,6 @@ if __name__ == '__main__':
     # df_games = web_screp.all_competition_df(link)
     # print(len(df_games))
     # # print(df_games[0])
-
     # x = web_screp.all_clubs_name()
     # connection.load_data(df_games[0])
     # list_player = web_screp.list_df_player_madrid(df_games)
