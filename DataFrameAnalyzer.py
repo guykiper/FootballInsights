@@ -2,21 +2,55 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import shapely.geometry
-
+from sklearn.cluster import KMeans
 import plotly.graph_objects as go
 
 class DataFrameAnalyzer:
-    def __init__(self, dataframe, gender):
+    """
+    A utility class for analyzing and visualizing data in a pandas DataFrame.
+
+    Attributes:
+    - dataframe (pandas.DataFrame): The input DataFrame for analysis.
+    - gender (str): A gender identifier for the analysis.
+
+    Methods:
+    - summary_statistics(): Generate summary statistics for the DataFrame.
+    - groupby_sum(column): Perform a groupby operation and calculate sum of groups.
+    - plot_histogram(column): Generate a histogram plot for a specified column.
+    - plot_bar_chart(x_column, y_column, max_label_length): Generate a bar chart plot with truncated labels.
+    - elbow_method(): Perform the Elbow Method for optimal cluster determination.
+    """
+    def __init__(self, dataframe, gender=''):
+        """
+        Initialize a DataFrameAnalyzer instance.
+        :param dataframe:dataframe (pandas.DataFrame): The input DataFrame for analysis.
+        :param gender:gender (str, optional): A gender identifier for the analysis. Default is an empty string.
+        """
         self.dataframe = dataframe
         self.gender = gender
 
     def summary_statistics(self):
+        """
+        Generate summary statistics for the DataFrame.
+        :return:
+        pandas.DataFrame: A DataFrame containing summary statistics of the input data.
+        """
         return self.dataframe.describe()
 
     def groupby_sum(self, column):
+        """
+        Perform a groupby operation on a specified column and calculate the sum of each group.
+        :param column: The column name for the groupby operation.
+        :return:
+        DataFrame showing sum of values for each group.
+        """
         return self.dataframe.groupby(column).sum()
 
     def plot_histogram(self, column):
+        """
+        Generate a histogram plot for a specified column.
+        :param column: The column name for which the histogram will be plotted.
+        """
         self.dataframe[column].plot(kind='hist')
         plt.xlabel(column)
         plt.ylabel('Frequency')
@@ -24,6 +58,12 @@ class DataFrameAnalyzer:
         plt.show()
 
     def plot_bar_chart(self, x_column, y_column, max_label_length=10):
+        """
+        Generate a bar chart plot with truncated labels.
+        :param x_column: The column name for the x-axis of the bar chart.
+        :param y_column: The column name for the y-axis of the bar chart.
+        :param max_label_length: Maximum length for truncated labels, defaults to 10.
+        """
         # Truncate the team names to the first max_label_length characters
         self.dataframe['truncated_team'] = self.dataframe['team'].str[:max_label_length]
 
@@ -36,6 +76,22 @@ class DataFrameAnalyzer:
 
         # Drop the temporary column after plotting
         self.dataframe.drop(columns=['truncated_team'], inplace=True)
+    def elbow_method(self):
+        """
+        Perform the Elbow Method for determining the optimal number of clusters using KMeans algorithm.
+        Plots the within-cluster sum of squares (CS) for different numbers of clusters.
+        """
+        cs = []
+        for i in range(1, 11):
+            kmeans = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=0)
+            kmeans.fit(self.dataframe)
+            cs.append(kmeans.inertia_)
+        plt.plot(range(1, 11), cs)
+        plt.title('The Elbow Method')
+        plt.xlabel('Number of clusters')
+        plt.ylabel('CS')
+        plt.show()
+
 
 
     @staticmethod
@@ -120,9 +176,9 @@ class DataFrameAnalyzer:
 
 
 #
-male_data = pd.read_csv('male.csv')
-analyzer_male = DataFrameAnalyzer(male_data, 'male')
-analyzer_male.create_radar_chart_plotly(row_index1=8, row_index2=2)
+# male_data = pd.read_csv('male.csv')
+# analyzer_male = DataFrameAnalyzer(male_data, 'male')
+# analyzer_male.create_radar_chart_plotly(row_index1=8, row_index2=2)
 #
 # female_data = pd.read_csv('female.csv')
 # analyzer_female = DataFrameAnalyzer(female_data, 'female')
