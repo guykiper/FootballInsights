@@ -170,17 +170,19 @@ class DataFrameAnalyzer:
                 continue  # Skip if there are no attributes of this type
 
             player1_values = list(self.dataframe.loc[row_index1, attributes])
+            player1_values = list(np.nan_to_num(player1_values, nan=0.0))
             player2_values = list(self.dataframe.loc[row_index2, attributes])
-
+            player2_values = list(np.nan_to_num(player2_values, nan=0.0))
             self.pattern_rader_plotly(attributes, [player1_values, player2_values], name_player1, name_player2)
 
 
-#
-# male_data = pd.read_csv('male.csv')
-# analyzer_male = DataFrameAnalyzer(male_data, 'male')
-# analyzer_male.create_radar_chart_plotly(row_index1=8, row_index2=2)
-#
-# female_data = pd.read_csv('female.csv')
-# analyzer_female = DataFrameAnalyzer(female_data, 'female')
-# analyzer_female.create_radar_chart_plotly(row_index1=28, row_index2=29)
+if __name__ == '__main__':
+
+    male_data = pd.read_csv('Data_files/male.csv')
+    analyzer_male = DataFrameAnalyzer(male_data, 'male')
+    analyzer_male.create_radar_chart_plotly(row_index1=33641, row_index2=32857)
+
+    # female_data = pd.read_csv('Data_files/female.csv')
+    # analyzer_female = DataFrameAnalyzer(female_data, 'female')
+    # analyzer_female.create_radar_chart_plotly(row_index1=28, row_index2=29)
 
