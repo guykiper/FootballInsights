@@ -1,6 +1,6 @@
 import unittest
 import web_scraping
-import DataProcessor
+from DataProcessor import DataProcessor_Kmeans
 import DataFrameAnalyzer
 import MachineLearning_class
 import requests
@@ -51,11 +51,11 @@ class TestClassRM(unittest.TestCase):
 class TestDataProcessor(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.test_obj_data_male_wide = DataProcessor.DataPreprocessor('male.csv','wide')
-        self.test_obj_data_male_narrow = DataProcessor.DataPreprocessor('male.csv', 'narrow')
-        self.test_obj_data_female_wide_1 = DataProcessor.DataPreprocessor('female.csv', 'wide')
-        self.test_obj_data_female_wide_2 = DataProcessor.DataPreprocessor('female.csv', 'wide')
-        self.test_obj_data_female_narrow = DataProcessor.DataPreprocessor('female.csv', 'narrow')
+        self.test_obj_data_male_wide = DataProcessor_Kmeans('Data_files/male.csv','wide')
+        self.test_obj_data_male_narrow = DataProcessor_Kmeans('Data_files/male.csv', 'narrow')
+        self.test_obj_data_female_wide_1 = DataProcessor_Kmeans('Data_files/female.csv', 'wide')
+        self.test_obj_data_female_wide_2 = DataProcessor_Kmeans('Data_files/female.csv', 'wide')
+        self.test_obj_data_female_narrow = DataProcessor_Kmeans('Data_files/female.csv', 'narrow')
 
     def test_columns_notin_data(self):
         self.test_obj_data_female_wide_1.drop_unnecessary_columns()
