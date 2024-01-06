@@ -1,5 +1,5 @@
 import unittest
-import Class_RM_DB
+import web_scraping
 import DataProcessor
 import DataFrameAnalyzer
 import MachineLearning_class
@@ -12,9 +12,9 @@ import numpy as np
 class TestClassRM(unittest.TestCase):
 
     def setUp(self):
-        self.test_obj_real_madrid_2000 = Class_RM_DB.WebScraping_fbref('Real-Madrid', '53a2f082', 2000)
-        self.test_obj_real_madrid_2022 = Class_RM_DB.WebScraping_fbref('Real-Madrid', '53a2f082', 2022, conv_json=False)
-        self.test_obj_real_madrid_woman_2022 = Class_RM_DB.WebScraping_fbref('Real-Madrid-Women', '54582b93', 2022)
+        self.test_obj_real_madrid_2000 = web_scraping.WebScraping_fbref('Real-Madrid', '53a2f082', 2000)
+        self.test_obj_real_madrid_2022 = web_scraping.WebScraping_fbref('Real-Madrid', '53a2f082', 2022, conv_json=False)
+        self.test_obj_real_madrid_woman_2022 = web_scraping.WebScraping_fbref('Real-Madrid-Women', '54582b93', 2022)
         pass
 
     def tearDown(self):
