@@ -272,6 +272,8 @@ class Dataprocessor_transform:
 
         self.df = pd.read_csv(link_df)
         self.gender = gender
+        self.df_male = pd.read_csv('Data_files/csv files/male.csv')
+        self.df_female = pd.read_csv('Data_files/csv files/female.csv')
 
     # def change_nation_code(self):
 
@@ -386,7 +388,14 @@ class Dataprocessor_transform:
         self.df['Pos'] = cleaned
 
 
-
+    def marge_male_female(self):
+        self.df_male.drop(self.df_male.columns[self.df_male.columns.str.startswith('Unnamed')], axis=1, inplace=True)
+        self.df_female.drop(self.df_female.columns[self.df_female.columns.str.startswith('Unnamed')], axis=1, inplace=True)
+        self.df_male['gender'] = 'male'
+        self.df_female['gender'] = 'female'
+        players = pd.concat([self.df_male, self.df_female])
+        players['ID'] = range(len(players))
+        players.to_csv('Data_files/csv files/players.csv')
 
     def save_df_csv(self, link_save):
         self.df.to_csv(link_save)
@@ -405,8 +414,8 @@ if __name__ == "__main__":
 
     gender = 'female'
     data = Dataprocessor_transform("Data_files/csv files/" + gender + ".csv", gender)
-    data.add_lat_long('Data_files/csv files/locaiton_info_' + gender + '.csv', "Nation")
-    data.Pos_column_transform()
-    data.save_df_csv("Data_files/csv files/" + gender + ".csv")
-
+    # data.add_lat_long('Data_files/csv files/locaiton_info_' + gender + '.csv', "Nation")
+    # data.Pos_column_transform()
+    # data.save_df_csv("Data_files/csv files/" + gender + ".csv")
+    data.marge_male_female()
 
