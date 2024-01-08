@@ -12,8 +12,75 @@ import tensorflow as tf
 from io import BytesIO
 from sklearn.model_selection import train_test_split
 from PIL import Image
+import geopy
+import pycountry
+from geopy.geocoders import Nominatim
 IMAGE_SIZE = (224, 224)
 
+dict_country_code_iso_alpha_3 = {
+    'HON': 'HND',
+    'URU': 'URY',
+    'GRE': 'GRC',
+    'ZAM': 'ZMB',
+    'CHA': 'TCD',
+    'ALG': 'DZA',
+    'SIN': 'SGP',
+    'VIE': 'VNM',
+    'VIN': 'VCT',
+    'MAD': 'MDG',  # Madagascar
+    'SUD': 'SDN',
+    'NIR': 'GBR',
+    'SCO': 'GBR',
+    'GER': 'DEU',
+    'ARU': 'ABW',
+    'POR': 'PRT',
+    'GUI': 'GIN',
+    'FIJ': 'FJI',
+    'SMA': 'SXM',  # Sint Maarten
+    'SRI': 'LKA',
+    'DEN': 'DNK',
+    'TRI': 'TTO',
+    'ENG': 'GBR',
+    'BUL': 'BGR',
+    'SKN': 'KNA',
+    'RSA': 'ZAF',
+    'HAI': 'HTI',
+    'GUA': 'GTM',
+    'VAN': 'VUT',
+    'TAN': 'TZA',
+    'ZIM': 'ZWE',
+    'SUI': 'CHE',
+    'LIB': 'LBN',
+    'GRN': 'GRD',
+    'PAR': 'PRY',
+    'NED': 'NLD',
+    'PUR': 'PRI',
+    'SMN': 'SMR',
+    'BER': 'BMU',
+    'EQG': 'GNQ',
+    'PHI': 'PHL',
+    'SEY': 'SYC',
+    'BOT': 'BWA',
+    'CHI': 'CHL',
+    'ANG': 'AGO',
+    'CRC': 'CRI',
+    'TOG': 'TGO',
+    'MTN': 'MRT',
+    'WAL': 'GBR',
+    'CRO': 'HRV',
+    'PLE': 'PSE',
+    'KSA': 'SAU',
+    'MRI': 'MUS',
+    'NIG': 'NGA',
+    'BHU': 'BTN',
+    'CTA': 'CAF',  # Central African Republic
+    'NEP': 'NPL',
+    'GAM': 'GMB',
+    'LES': 'LSO',
+    'MAS': 'MYS',
+    'CGO': 'COG',
+    'TPE': 'TWN'
+}
 
 
 
@@ -185,3 +252,161 @@ class ImageClassifierEnsemble_DataPreprocessing:
         print('Image #{} : '.format(index) + class_names[labels[index]])
         cv2.imshow('image', image)
         cv2.waitKey(0)
+
+
+class Dataprocessor_transform:
+
+    def __init__(self, link_df, gender = 'male'):
+
+        """
+        Initializes the Dataprocessor_transform class.
+
+        Parameters:
+        - link_df (str): File path or URL to the CSV file containing the input data.
+        - gender (str): Gender information (default is 'male').
+
+        Attributes:
+        - df (pd.DataFrame): DataFrame containing the input data.
+        - gender (str): Gender information associated with the instance.
+        """
+
+        self.df = pd.read_csv(link_df)
+        self.gender = gender
+
+    # def change_nation_code(self):
+
+    def add_country_names(self, save_link, column_name='Nation'):
+        """
+        Adds a full country name column to the DataFrame based on country code shortcuts.
+
+        Parameters:
+        - save_link (str): File path or URL to save the modified DataFrame as a new CSV file.
+        - column_name (str): Name of the column containing country code shortcuts (default is 'Nation').
+
+        Returns:
+        - list: A list of unique tuples, each containing a country's full name and its corresponding country code.
+
+        This method processes the DataFrame by mapping country code shortcuts to their full names using the pycountry library.
+        It then adds a new column 'country_full_name' to the DataFrame and saves the result to a new CSV file specified by save_link.
+        The method returns a list of unique pairs of country names and their corresponding country code shortcuts.
+
+        Note:
+        - If a country code is not found, 'null' is used as a placeholder for both the country code and full name.
+        - The code 'KVX' is treated as a special case, mapping to 'null' with the country name 'Kosovo'.
+        """
+
+        df_code_country = pd.DataFrame()
+        countries = {}
+        for country in pycountry.countries:
+            countries[country.alpha_3] = country.name
+
+        names = []
+        code_alpha_3_iso =[]
+        for code in self.df[column_name]:
+            if code in countries:
+                code_alpha_3_iso.append(code)
+                names.append(countries[code])
+            elif code is np.nan:
+                code_alpha_3_iso.append('null')
+                names.append('null')
+            elif code == 'KVX':
+                code_alpha_3_iso.append('null')
+                names.append('Kosovo')
+            else:
+                code_alpha_3_iso.append(dict_country_code_iso_alpha_3[code])
+                names.append(countries[dict_country_code_iso_alpha_3[code]])
+        original_new = list(set((zip(list(self.df[column_name]),code_alpha_3_iso ))))
+        df_code_country['original_code'] = [x[0] for x in original_new]
+        df_code_country['new_code'] = [x[1] for x in original_new]
+
+        df_code_country.to_csv(save_link)
+        self.df['country_full_name'] = names
+        self.df['Nation'] = code_alpha_3_iso
+        return list(set(list(zip(names, code_alpha_3_iso))))
+    def add_lat_long(self, save_link, column_name='Nation'):
+
+        """
+        Adds latitude and longitude information to the DataFrame based on country names.
+
+        Parameters:
+        - save_link (str): File path or URL to save the DataFrame with latitude and longitude information as a new CSV file.
+        - column_name (str): Name of the column containing country names (default is 'Nation').
+
+        Returns:
+        None
+
+        This method utilizes the `add_country_names` method to obtain country names and codes,
+        and then uses the geopy library to retrieve latitude and longitude information for each country.
+        The resulting DataFrame, including country names, country codes, latitude, and longitude,
+        is saved to a new CSV file specified by save_link.
+
+        Note:
+        - If geolocation information is not available for a country, NaN values are assigned to the latitude and longitude.
+        """
+
+        # Call add_country_names to get country names and codes
+        country_code = self.add_country_names('Data_files/csv files/code_country_'+self.gender+'.csv', column_name)
+
+        # Initialize geolocator
+        geolocator = Nominatim(user_agent="my_app", timeout=5)
+
+        # Initialize DataFrame for location information
+        df_location = pd.DataFrame(columns=['country_name', 'country_code', 'latitude', 'longitude'])
+        lat = []
+        lon = []
+        countries = [x[0] for x in country_code]
+        countries_code = [x[1] for x in country_code]
+
+        # Retrieve latitude and longitude for each country
+        for country in countries:
+            location = geolocator.geocode(country)
+            if location:
+                lat.append(location.latitude)
+                lon.append(location.longitude)
+            else:
+                lat.append(np.nan)
+                lon.append(np.nan)
+        # Populate DataFrame with location information
+        df_location['country_name'] = countries
+        df_location['country_code'] = countries_code
+        df_location['latitude'] = lat
+        df_location['longitude'] = lon
+
+        # Save the DataFrame to a new CSV file
+        df_location.to_csv(save_link)
+
+    def Pos_column_transform(self):
+        cleaned = []
+        for p in self.df['Pos']:
+            split = str(p).split(",")
+            key = tuple(sorted(split))
+            cleaned.append(",".join(key))
+
+        # Overwrite column with cleaned values
+        self.df['Pos'] = cleaned
+
+
+
+
+    def save_df_csv(self, link_save):
+        self.df.to_csv(link_save)
+
+
+
+
+
+if __name__ == "__main__":
+
+    # gender = 'male'
+    # data = Dataprocessor_transform("Data_files/csv files/"+gender+".csv",gender )
+    # data.add_lat_long('Data_files/csv files/locaiton_info_'+gender+'.csv', "Nation")
+    # data.Pos_column_transform()
+    # data.save_df_csv("Data_files/csv files/"+gender+".csv")
+
+    gender = 'female'
+    data = Dataprocessor_transform("Data_files/csv files/" + gender + ".csv", gender)
+    data.add_lat_long('Data_files/csv files/locaiton_info_' + gender + '.csv', "Nation")
+    data.Pos_column_transform()
+    data.save_df_csv("Data_files/csv files/" + gender + ".csv")
+
+
