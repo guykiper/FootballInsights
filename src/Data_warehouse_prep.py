@@ -25,10 +25,10 @@ class create_tables:
         Constructor to load all the raw CSV files needed for processing.
         """
 
-        self.file_locatoin_info_male = pd.read_csv('Data_files/csv files/locaiton_info.csv')
-        self.file_location_info_female = pd.read_csv('Data_files/csv files/locaiton_info_female.csv')
-        self.file_players = pd.read_csv('Data_files/csv files/players.csv')
-        self.file_teams = pd.read_csv('Data_files/csv files/backup_new.csv')
+        self.file_locatoin_info_male = pd.read_csv('../Data_files/csv files/locaiton_info.csv')
+        self.file_location_info_female = pd.read_csv('../Data_files/csv files/locaiton_info_female.csv')
+        self.file_players = pd.read_csv('../Data_files/csv files/players.csv')
+        self.file_teams = pd.read_csv('../Data_files/csv files/backup_new.csv')
         self.club_and_code = self.create_teams_table()[['club_name','club_code']]
         self.club_code = self.get_club_code()
         pass

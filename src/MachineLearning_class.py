@@ -1,20 +1,10 @@
-import pandas as pd
 from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler
 import DataFrameAnalyzer
 from DataProcessor import DataProcessor_Kmeans
 import warnings
 import os
-import random
-import shutil
 import numpy as np
-from tqdm import tqdm
-import requests
-import pandas as pd
 import cv2
 import tensorflow as tf
 from sklearn.metrics import accuracy_score
@@ -157,12 +147,12 @@ if __name__ == "__main__":
     if choose == 'k':
         # Create an instance of DataProcessor
         # Create an instance of the DataPreprocessor class
-        preprocessor_wide = DataProcessor_Kmeans('Data_files/female.csv')
+        preprocessor_wide = DataProcessor_Kmeans('../Data_files/female.csv')
         # Preprocess and encode the data (use 'wide' or 'narrow' as desired)
         preprocessor_wide.preprocess_and_encode()
         encoded_data_wide = preprocessor_wide.data
 
-        preprocessor_narrow = DataProcessor_Kmeans('Data_files/female.csv', 'narrow')
+        preprocessor_narrow = DataProcessor_Kmeans('../Data_files/female.csv', 'narrow')
         preprocessor_narrow.preprocess_and_encode()
         encoded_data_narrow = preprocessor_narrow.data
 
@@ -196,7 +186,7 @@ if __name__ == "__main__":
         print("Accuracy: {}".format(accuracy))
 
         # loaded_models = data_prep.load_ensemble_models()
-        base_path = "Data_files/prepared_data/train/Belgium Football Clubs"
+        base_path = "../Data_files/prepared_data/train/Belgium Football Clubs"
         image_filename = "Antwerp_Male_c2e6b53b.png"
         image_path = os.path.join(base_path, image_filename)
         image = cv2.imread(image_path)

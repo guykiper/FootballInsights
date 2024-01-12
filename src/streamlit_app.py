@@ -6,7 +6,7 @@ import plotly.express as px
 # Cache dataframes to avoid reloading
 @st.cache_data
 def load_data():
-    df = pd.read_csv("Data_files/csv files/male.csv")
+    df = pd.read_csv("../Data_files/csv files/male.csv")
     df = df.drop(columns=["Unnamed: 0"], errors="ignore")
 
     return df

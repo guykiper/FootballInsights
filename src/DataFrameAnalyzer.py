@@ -4,6 +4,7 @@ import numpy as np
 import shapely.geometry
 from sklearn.cluster import KMeans
 import plotly.graph_objects as go
+import plotly.express as px
 
 class DataFrameAnalyzer:
     """
@@ -56,6 +57,8 @@ class DataFrameAnalyzer:
         plt.ylabel('Frequency')
         plt.title(f'Histogram of {column}')
         plt.show()
+
+
 
     def plot_bar_chart(self, x_column, y_column, max_label_length=10):
         """
@@ -178,11 +181,12 @@ class DataFrameAnalyzer:
 
 if __name__ == '__main__':
 
-    male_data = pd.read_csv('Data_files/male.csv')
+    male_data = pd.read_csv('../Data_files/male.csv')
     analyzer_male = DataFrameAnalyzer(male_data, 'male')
     analyzer_male.create_radar_chart_plotly(row_index1=33641, row_index2=32857)
 
     # female_data = pd.read_csv('Data_files/female.csv')
     # analyzer_female = DataFrameAnalyzer(female_data, 'female')
     # analyzer_female.create_radar_chart_plotly(row_index1=28, row_index2=29)
+
 

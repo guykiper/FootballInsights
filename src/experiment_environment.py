@@ -1,5 +1,4 @@
-import Class_RM_DB
-import json
+import web_scraping
 import pandas as pd
 
 GENDER_MALE = 'Male'
@@ -14,7 +13,7 @@ def scrape_and_save_data(team_name, team_code, year, gender):
     :param gender: the gender of the team
     :return: return the first data frame in the url of the team in that year
     """
-    web_scrap = Class_RM_DB.WebScraping_fbref(team_name, team_code, year, conv_json=False)
+    web_scrap = web_scraping.WebScraping_fbref(team_name, team_code, year, conv_json=False)
     link = web_scrap.create_url_season()
     # web_scrap.gender_dataframe(link)
 

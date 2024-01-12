@@ -461,7 +461,7 @@ class ImageScraper:
 
     @staticmethod
     def create_folder_image():
-        df = pd.read_csv("Data_files/backup_new.csv")
+        df = pd.read_csv("../Data_files/backup_new.csv")
 
         # Create a directory to store the images
         output_directory = "Data_files/downloaded_images"
@@ -573,7 +573,7 @@ if __name__ == '__main__':
 
 
     #image scraper
-    csv_file = 'Data_files/backup.csv'
+    csv_file = '../Data_files/backup.csv'
     image_scraper = ImageScraper(csv_file)
     image_lists = image_scraper.scrape_images()
 

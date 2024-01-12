@@ -147,7 +147,7 @@ class ImageClassifierEnsemble_DataPreprocessing:
         # Create a directory to store the images
         output_directory = "Data_files/downloaded_images"
         os.makedirs(output_directory, exist_ok=True)
-        df = pd.read_csv('Data_files/backup_new.csv')
+        df = pd.read_csv('../Data_files/backup_new.csv')
         for index, row in df.iterrows():
             image_url = row['link_image_club']
             club_name = row['club_name']
@@ -272,8 +272,8 @@ class Dataprocessor_transform:
 
         self.df = pd.read_csv(link_df)
         self.gender = gender
-        self.df_male = pd.read_csv('Data_files/csv files/male.csv')
-        self.df_female = pd.read_csv('Data_files/csv files/female.csv')
+        self.df_male = pd.read_csv('../Data_files/csv files/male.csv')
+        self.df_female = pd.read_csv('../Data_files/csv files/female.csv')
 
     # def change_nation_code(self):
 
