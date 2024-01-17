@@ -307,7 +307,11 @@ class Dataprocessor_transform:
         for code in self.df[column_name]:
             if code in countries:
                 code_alpha_3_iso.append(code)
-                names.append(countries[code])
+                # Extracting the portion to the left of the first comma (if any)
+                if ',' in countries[code]:
+                    names.append(countries[code].split(',')[0])
+                else:
+                    names.append(countries[code])
             elif code is np.nan:
                 code_alpha_3_iso.append('null')
                 names.append('null')
@@ -406,14 +410,15 @@ class Dataprocessor_transform:
 
 if __name__ == "__main__":
 
-    # gender = 'male'
-    # data = Dataprocessor_transform("Data_files/csv files/"+gender+".csv",gender )
+    gender = 'male'
+    data = Dataprocessor_transform("../Data_files/csv files/"+gender+".csv",gender )
+    data.add_country_names('dfs')
     # data.add_lat_long('Data_files/csv files/locaiton_info_'+gender+'.csv', "Nation")
     # data.Pos_column_transform()
     # data.save_df_csv("Data_files/csv files/"+gender+".csv")
 
     gender = 'female'
-    data = Dataprocessor_transform("Data_files/csv files/" + gender + ".csv", gender)
+    data = Dataprocessor_transform("../Data_files/csv files/" + gender + ".csv", gender)
     # data.add_lat_long('Data_files/csv files/locaiton_info_' + gender + '.csv', "Nation")
     # data.Pos_column_transform()
     # data.save_df_csv("Data_files/csv files/" + gender + ".csv")
