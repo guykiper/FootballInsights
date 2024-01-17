@@ -6,7 +6,7 @@ import plotly.express as px
 # Cache dataframes to avoid reloading
 @st.cache_data
 def load_data():
-    df = pd.read_csv("../Data_files/csv files/male.csv")
+    df = pd.read_csv("Data_files/csv files/players.csv")
     df = df.drop(columns=["Unnamed: 0"], errors="ignore")
 
     return df
@@ -51,13 +51,13 @@ def main_page():
 def plot_charts():
     fig1 = px.bar(df, x='Player', y='Performance - Gls', title='Goals per Player (Full Data)')
     fig2 = px.scatter(df, x='Age', y='Playing Time - Min', color='Pos', title='Age vs Playing Time (Full Data)')
-    counts = df.groupby("Nation").size().reset_index(name="counts")
+    counts = df.groupby("country_full_name").size().reset_index(name="counts")
     fig3 = px.choropleth(
         counts,
-        locations="Nation",
+        locations="country_full_name",
         locationmode="country names",
         color="counts",
-        hover_data=["Nation", "counts"]
+        hover_data=["country_full_name", "counts"]
     )
 
     return fig1, fig2, fig3
