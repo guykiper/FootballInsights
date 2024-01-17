@@ -1,4 +1,3 @@
-import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 import os
 import random
@@ -8,11 +7,9 @@ from tqdm import tqdm
 import requests
 import pandas as pd
 import cv2
-import tensorflow as tf
 from io import BytesIO
 from sklearn.model_selection import train_test_split
 from PIL import Image
-import geopy
 import pycountry
 from geopy.geocoders import Nominatim
 IMAGE_SIZE = (224, 224)
@@ -351,7 +348,7 @@ class Dataprocessor_transform:
         """
 
         # Call add_country_names to get country names and codes
-        country_code = self.add_country_names('Data_files/csv files/code_country_'+self.gender+'.csv', column_name)
+        country_code = self.add_country_names('../Data_files/csv files/code_country_'+self.gender+'.csv', column_name)
 
         # Initialize geolocator
         geolocator = Nominatim(user_agent="my_app", timeout=5)
@@ -381,15 +378,26 @@ class Dataprocessor_transform:
         # Save the DataFrame to a new CSV file
         df_location.to_csv(save_link)
 
-    def Pos_column_transform(self):
+    def pos_transform(self):
         cleaned = []
+        main_pos = []
+        secondary_pos = []
+
         for p in self.df['Pos']:
             split = str(p).split(",")
-            key = tuple(sorted(split))
-            cleaned.append(",".join(key))
+            main_pos.append(split[0])
+            if len(split) > 1:
+                secondary_pos.append(split[1])
+            else:
+                secondary_pos.append(None)
 
-        # Overwrite column with cleaned values
+            key = tuple(sorted(split))
+            cleaned.append("-".join(key))
+        print('hi')
+        self.df['Main_Pos'] = main_pos
+        self.df['Secondary_Pos'] = secondary_pos
         self.df['Pos'] = cleaned
+        print('finish')
 
 
     def marge_male_female(self):
@@ -399,7 +407,7 @@ class Dataprocessor_transform:
         self.df_female['gender'] = 'female'
         players = pd.concat([self.df_male, self.df_female])
         players['ID'] = range(len(players))
-        players.to_csv('Data_files/csv files/players.csv')
+        players.to_csv('../Data_files/csv files/players.csv')
 
     def save_df_csv(self, link_save):
         self.df.to_csv(link_save)
@@ -412,15 +420,17 @@ if __name__ == "__main__":
 
     gender = 'male'
     data = Dataprocessor_transform("../Data_files/csv files/"+gender+".csv",gender )
-    data.add_country_names('dfs')
-    # data.add_lat_long('Data_files/csv files/locaiton_info_'+gender+'.csv', "Nation")
+    data.pos_transform()
+    # data.add_lat_long('../Data_files/csv files/locaiton_info_'+gender+'.csv', "Nation")
     # data.Pos_column_transform()
     # data.save_df_csv("Data_files/csv files/"+gender+".csv")
 
-    gender = 'female'
-    data = Dataprocessor_transform("../Data_files/csv files/" + gender + ".csv", gender)
-    # data.add_lat_long('Data_files/csv files/locaiton_info_' + gender + '.csv', "Nation")
+    # gender = 'female'
+    # data = Dataprocessor_transform("../Data_files/csv files/" + gender + ".csv", gender)
+    # data.add_lat_long('../Data_files/csv files/locaiton_info_' + gender + '.csv', "Nation")
     # data.Pos_column_transform()
-    # data.save_df_csv("Data_files/csv files/" + gender + ".csv")
-    data.marge_male_female()
+    # data.save_df_csv("../Data_files/csv files/" + gender + ".csv")
+
+
+    # data.marge_male_female()
 
