@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from PIL import Image
 import pycountry
 from geopy.geocoders import Nominatim
+import hashlib
 IMAGE_SIZE = (224, 224)
 
 dict_country_code_iso_alpha_3 = {
@@ -273,6 +274,7 @@ class Dataprocessor_transform:
         self.add_lat_long()
         self.pos_transform()
         self.drop_add_columns()
+        self.add_unique_id()
 
 
     # def change_nation_code(self):
@@ -415,6 +417,18 @@ class Dataprocessor_transform:
         self.df.drop(self.df[self.df['Player'] == 'Squad Total'].index, inplace=True)
         self.df['Gender'] = self.gender
 
+
+
+
+    def add_unique_id(self):
+
+        def generate_id(row):
+            data = row['Player'] + row['Nation'] + row['Gender'] + row['Pos']
+            hashed = hashlib.sha256(data.encode())
+            return hashed.hexdigest()[:16]
+
+        id_col = "ID"
+        self.df[id_col] = self.df.apply(generate_id, axis=1)
 
     def save_df_csv(self, link_save):
         self.df.to_csv(link_save)
