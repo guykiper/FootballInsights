@@ -270,8 +270,10 @@ class Dataprocessor_transform:
         self.df = pd.read_csv(link_df)
         self.gender = gender
         self.df_location = pd.DataFrame.empty
-        self.df_male = pd.read_csv('../Data_files/csv files/male.csv')
-        self.df_female = pd.read_csv('../Data_files/csv files/female.csv')
+        self.add_lat_long()
+        self.pos_transform()
+        self.drop_add_columns()
+
 
     # def change_nation_code(self):
 
@@ -407,6 +409,12 @@ class Dataprocessor_transform:
     #     players = pd.concat([self.df_male, self.df_female])
     #     players['ID'] = range(len(players))
     #     players.to_csv('../Data_files/csv files/players.csv')
+    def drop_add_columns(self):
+        self.df.drop(self.df.columns[self.df.columns.str.startswith('Unnamed')], axis=1, inplace=True)
+        self.df.drop(self.df[self.df['Player'] == 'Opponent Total'].index, inplace=True)
+        self.df.drop(self.df[self.df['Player'] == 'Squad Total'].index, inplace=True)
+        self.df['Gender'] = self.gender
+
 
     def save_df_csv(self, link_save):
         self.df.to_csv(link_save)
