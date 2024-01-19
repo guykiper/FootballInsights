@@ -277,6 +277,7 @@ class Dataprocessor_transform:
         self.pos_transform()
         self.drop_add_columns()
         self.add_unique_id()
+        self.club_name_transform()
 
 
     # def change_nation_code(self):
@@ -333,7 +334,7 @@ class Dataprocessor_transform:
         self.df['country_full_name'] = names
         self.df['Nation'] = code_alpha_3_iso
         return list(set(list(zip(names, code_alpha_3_iso))))
-    def add_lat_long(self, save_link, column_name='Nation'):
+    def add_lat_long(self, column_name='Nation'):
 
         """
         Adds latitude and longitude information to the DataFrame based on country names.
@@ -405,19 +406,37 @@ class Dataprocessor_transform:
         self.df['Pos'] = cleaned
 
 
+    def club_name_transform(self):
+        if self.gender == 'male':
+            self.df.loc[~self.df.team.str.contains('female|male'), 'team'] = self.df['team'] + '-' + self.df[
+                'Gender'].str.capitalize()
+        else:
+            club_names = []
+
+            for last,name in list(zip(self.df['team'].str.split('-').str[-1], self.df['team'])):
+                if last == 'Women':
+                    list_name = name.split('-')
+                    list_name[-1] = 'female'
+                    female_name = '-'.join(list_name)
+                    club_names.append(female_name)
+                else:
+                    club_names.append(name+'-female')
+            self.df['team'] = club_names
+            # Add female for those without
+
     # def marge_male_female(self):
     #     self.df_male.drop(self.df_male.columns[self.df_male.columns.str.startswith('Unnamed')], axis=1, inplace=True)
     #     self.df_female.drop(self.df_female.columns[self.df_female.columns.str.startswith('Unnamed')], axis=1, inplace=True)
-    #     self.df_male['gender'] = 'male'
-    #     self.df_female['gender'] = 'female'
+    #
     #     players = pd.concat([self.df_male, self.df_female])
-    #     players['ID'] = range(len(players))
     #     players.to_csv('../Data_files/csv files/players.csv')
     def drop_add_columns(self):
         self.df.drop(self.df.columns[self.df.columns.str.startswith('Unnamed')], axis=1, inplace=True)
         self.df.drop(self.df[self.df['Player'] == 'Opponent Total'].index, inplace=True)
         self.df.drop(self.df[self.df['Player'] == 'Squad Total'].index, inplace=True)
         self.df['Gender'] = self.gender
+        year = list(pd.read_csv('../Data_files/csv files/backup_new.csv')['year'])[0]
+        self.df['season'] = year
 
 
 
@@ -441,9 +460,13 @@ class Dataprocessor_transform:
 
 if __name__ == "__main__":
 
-    gender = 'male'
-    data = Dataprocessor_transform("../Data_files/csv files/"+gender+".csv",gender )
-    data.pos_transform()
+    gender = 'female'
+    df_male = pd.read_csv("../Data_files/csv files/" + gender + ".csv")
+    df_male.drop(df_male.columns[df_male.columns.str.startswith('country_full_name')], axis=1, inplace=True)
+    data = Dataprocessor_transform(df_male, gender)
+    data.club_name_transform()
+    # data.pos_transform()
+
     # data.add_lat_long('../Data_files/csv files/locaiton_info_'+gender+'.csv', "Nation")
     # data.Pos_column_transform()
     # data.save_df_csv("Data_files/csv files/"+gender+".csv")
@@ -453,7 +476,6 @@ if __name__ == "__main__":
     # data.add_lat_long('../Data_files/csv files/locaiton_info_' + gender + '.csv', "Nation")
     # data.Pos_column_transform()
     # data.save_df_csv("../Data_files/csv files/" + gender + ".csv")
-
 
     # data.marge_male_female()
 
