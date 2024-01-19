@@ -271,6 +271,8 @@ class Dataprocessor_transform:
         self.df = pd.read_csv(link_df)
         self.gender = gender
         self.df_location = pd.DataFrame.empty
+        self.opponent_total = self.df[self.df['Player'] == 'Opponent Total']  # c1f3aa251af6ebec
+        self.squad_total = self.df[self.df['Player'] == 'Squad Total']  # 198adbcff3305cf0
         self.add_lat_long()
         self.pos_transform()
         self.drop_add_columns()
