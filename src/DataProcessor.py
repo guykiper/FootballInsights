@@ -269,6 +269,7 @@ class Dataprocessor_transform:
 
         self.df = pd.read_csv(link_df)
         self.gender = gender
+        self.df_location = pd.DataFrame.empty
         self.df_male = pd.read_csv('../Data_files/csv files/male.csv')
         self.df_female = pd.read_csv('../Data_files/csv files/female.csv')
 
@@ -354,7 +355,7 @@ class Dataprocessor_transform:
         geolocator = Nominatim(user_agent="my_app", timeout=5)
 
         # Initialize DataFrame for location information
-        df_location = pd.DataFrame(columns=['country_name', 'country_code', 'latitude', 'longitude'])
+        self.df_location = pd.DataFrame(columns=['country_name', 'country_code', 'latitude', 'longitude'])
         lat = []
         lon = []
         countries = [x[0] for x in country_code]
@@ -370,13 +371,13 @@ class Dataprocessor_transform:
                 lat.append(np.nan)
                 lon.append(np.nan)
         # Populate DataFrame with location information
-        df_location['country_name'] = countries
-        df_location['country_code'] = countries_code
-        df_location['latitude'] = lat
-        df_location['longitude'] = lon
+        self.df_location['country_name'] = countries
+        self.df_location['country_code'] = countries_code
+        self.df_location['latitude'] = lat
+        self.df_location['longitude'] = lon
 
         # Save the DataFrame to a new CSV file
-        df_location.to_csv(save_link)
+        # self.df_location.to_csv(save_link)
 
     def pos_transform(self):
         cleaned = []
@@ -393,21 +394,19 @@ class Dataprocessor_transform:
 
             key = tuple(sorted(split))
             cleaned.append("-".join(key))
-        print('hi')
         self.df['Main_Pos'] = main_pos
         self.df['Secondary_Pos'] = secondary_pos
         self.df['Pos'] = cleaned
-        print('finish')
 
 
-    def marge_male_female(self):
-        self.df_male.drop(self.df_male.columns[self.df_male.columns.str.startswith('Unnamed')], axis=1, inplace=True)
-        self.df_female.drop(self.df_female.columns[self.df_female.columns.str.startswith('Unnamed')], axis=1, inplace=True)
-        self.df_male['gender'] = 'male'
-        self.df_female['gender'] = 'female'
-        players = pd.concat([self.df_male, self.df_female])
-        players['ID'] = range(len(players))
-        players.to_csv('../Data_files/csv files/players.csv')
+    # def marge_male_female(self):
+    #     self.df_male.drop(self.df_male.columns[self.df_male.columns.str.startswith('Unnamed')], axis=1, inplace=True)
+    #     self.df_female.drop(self.df_female.columns[self.df_female.columns.str.startswith('Unnamed')], axis=1, inplace=True)
+    #     self.df_male['gender'] = 'male'
+    #     self.df_female['gender'] = 'female'
+    #     players = pd.concat([self.df_male, self.df_female])
+    #     players['ID'] = range(len(players))
+    #     players.to_csv('../Data_files/csv files/players.csv')
 
     def save_df_csv(self, link_save):
         self.df.to_csv(link_save)
