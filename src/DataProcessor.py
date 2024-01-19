@@ -254,7 +254,7 @@ class ImageClassifierEnsemble_DataPreprocessing:
 
 class Dataprocessor_transform:
 
-    def __init__(self, link_df, gender = 'male'):
+    def __init__(self, df, gender = 'male'):
 
         """
         Initializes the Dataprocessor_transform class.
@@ -268,7 +268,7 @@ class Dataprocessor_transform:
         - gender (str): Gender information associated with the instance.
         """
 
-        self.df = pd.read_csv(link_df)
+        self.df = df
         self.gender = gender
         self.df_location = pd.DataFrame.empty
         self.opponent_total = self.df[self.df['Player'] == 'Opponent Total']  # c1f3aa251af6ebec
