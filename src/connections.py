@@ -31,10 +31,19 @@ class postgresql_conn:
 
     def __init__(self, params_dict):
         self.params_dict = params_dict
+        self.conn = psycopg2.connect(**self.params_dict)
 
     def connect(self):
         self.conn = psycopg2.connect(**self.params_dict)
         self.conn.autocommit = True
+
+    def execute_query(self, list_query_text):
+        cursor = self.conn.cursor()
+        for query_text in list_query_text:
+            cursor.execute(query_text)
+
+        self.conn.commit()
+        self.conn.close()
 
     def load_df(self, df, table_name):
         """
