@@ -13,6 +13,7 @@ from PIL import Image
 import pycountry
 from geopy.geocoders import Nominatim
 import hashlib
+
 IMAGE_SIZE = (224, 224)
 
 dict_country_code_iso_alpha_3 = {
@@ -81,8 +82,6 @@ dict_country_code_iso_alpha_3 = {
 }
 
 
-
-
 class DataProcessor_Kmeans:
     def __init__(self, file_path, data_type='wide'):
         self.data = pd.read_csv(file_path)
@@ -98,7 +97,8 @@ class DataProcessor_Kmeans:
     def filter_by_playing_time(self, threshold=10):
         self.data = self.data[self.data['Playing Time - Starts'] >= threshold]
 
-    def fill_playing_time_mp(self, row):
+    @staticmethod
+    def fill_playing_time_mp(row):
         if pd.isnull(row['Playing Time - MP']):
             return row['MP']
         return row['Playing Time - MP']
@@ -129,7 +129,6 @@ class DataProcessor_Kmeans:
             self.data = self.data.dropna(subset=['Age', 'Pos'])
 
 
-
 class ImageClassifierEnsemble_DataPreprocessing:
     IMAGE_SIZE = (224, 224)
     n_estimators = 10
@@ -141,7 +140,8 @@ class ImageClassifierEnsemble_DataPreprocessing:
         self.min_images_threshold = min_images_threshold
         self.class_names = []  # Initialize the class names attribute
 
-    def create_directory(self):
+    @staticmethod
+    def create_directory():
         # Create a directory to store the images
         output_directory = "Data_files/downloaded_images"
         os.makedirs(output_directory, exist_ok=True)
@@ -176,7 +176,7 @@ class ImageClassifierEnsemble_DataPreprocessing:
 
     def prepare_data(self):
         os.makedirs(self.output_directory, exist_ok=True)
-        data = []
+        data_images = []
 
         for country_folder in os.listdir(self.data_directory):
             country_path = os.path.join(self.data_directory, country_folder)
@@ -190,10 +190,10 @@ class ImageClassifierEnsemble_DataPreprocessing:
                     self.class_names.append(country_label)  # Add class names
                     for image_file in os.listdir(country_path):
                         image_path = os.path.join(country_path, image_file)
-                        data.append((image_path, country_label))
+                        data_images.append((image_path, country_label))
 
-        random.shuffle(data)
-        train_data, test_data = train_test_split(data, test_size=self.test_size, random_state=42)
+        random.shuffle(data_images)
+        train_data, test_data = train_test_split(data_images, test_size=self.test_size, random_state=42)
         train_directory = os.path.join(self.output_directory, "train")
         test_directory = os.path.join(self.output_directory, "test")
 
@@ -230,6 +230,7 @@ class ImageClassifierEnsemble_DataPreprocessing:
                         image = cv2.resize(image, IMAGE_SIZE)
                         images.append(image)
                         labels.append(label)
+
                     except:
                         # print('error')
                         # print(image)
@@ -237,14 +238,14 @@ class ImageClassifierEnsemble_DataPreprocessing:
                         # print(folder)
                         print(image, file, folder)
 
-
             images = np.array(images, dtype='float32')
             labels = np.array(labels, dtype='int32')
             output.append((images, labels))
 
         return output
 
-    def display_random_image(self, class_names, images, labels):
+    @staticmethod
+    def display_random_image(class_names, images, labels):
         index = np.random.randint(images.shape[0])
         image = images[index]
         print('Image #{} : '.format(index) + class_names[labels[index]])
@@ -254,7 +255,7 @@ class ImageClassifierEnsemble_DataPreprocessing:
 
 class Dataprocessor_transform:
 
-    def __init__(self, df, gender = 'male'):
+    def __init__(self, df, gender='male'):
 
         """
         Initializes the Dataprocessor_transform class.
@@ -269,16 +270,18 @@ class Dataprocessor_transform:
         """
 
         self.df = df
+        self.file_teams = pd.read_csv('../Data_files/csv files/backup_new.csv')
+        self.team_code_table = pd.DataFrame.empty
         self.gender = gender
         self.df_location = pd.DataFrame.empty
+        self.pos_transform()
+        self.add_columns()
+        self.club_name_transform()
+        self.add_lat_long()
         self.opponent_total = self.df[self.df['Player'] == 'Opponent Total']  # c1f3aa251af6ebec
         self.squad_total = self.df[self.df['Player'] == 'Squad Total']  # 198adbcff3305cf0
-        self.add_lat_long()
-        self.pos_transform()
-        self.drop_add_columns()
         self.add_unique_id()
-        self.club_name_transform()
-
+        self.drop_columns()
 
     # def change_nation_code(self):
 
@@ -308,7 +311,7 @@ class Dataprocessor_transform:
             countries[country.alpha_3] = country.name
 
         names = []
-        code_alpha_3_iso =[]
+        code_alpha_3_iso = []
         for code in self.df[column_name]:
             if code in countries:
                 code_alpha_3_iso.append(code)
@@ -326,7 +329,7 @@ class Dataprocessor_transform:
             else:
                 code_alpha_3_iso.append(dict_country_code_iso_alpha_3[code])
                 names.append(countries[dict_country_code_iso_alpha_3[code]])
-        original_new = list(set((zip(list(self.df[column_name]),code_alpha_3_iso ))))
+        original_new = list(set((zip(list(self.df[column_name]), code_alpha_3_iso))))
         df_code_country['original_code'] = [x[0] for x in original_new]
         df_code_country['new_code'] = [x[1] for x in original_new]
 
@@ -334,6 +337,7 @@ class Dataprocessor_transform:
         self.df['country_full_name'] = names
         self.df['Nation'] = code_alpha_3_iso
         return list(set(list(zip(names, code_alpha_3_iso))))
+
     def add_lat_long(self, column_name='Nation'):
 
         """
@@ -356,7 +360,8 @@ class Dataprocessor_transform:
         """
 
         # Call add_country_names to get country names and codes
-        country_code = self.add_country_names('../Data_files/csv files/code_country_'+self.gender+'.csv', column_name)
+        country_code = self.add_country_names('../Data_files/csv files/code_country_' + self.gender + '.csv',
+                                              column_name)
 
         # Initialize geolocator
         geolocator = Nominatim(user_agent="my_app", timeout=5)
@@ -405,47 +410,50 @@ class Dataprocessor_transform:
         self.df['Secondary_Pos'] = secondary_pos
         self.df['Pos'] = cleaned
 
-
     def club_name_transform(self):
         if self.gender == 'male':
-            self.df.loc[~self.df.team.str.contains('female|male'), 'team'] = self.df['team'] + '-' + self.df[
-                'Gender'].str.capitalize()
+            club_names = []
+            res_list = []
+
+            for last, name in list(zip(self.df['team'].str.split('-').str[-1], self.df['team'])):
+                if last == 'male':
+                    list_name = name.split('-')
+                    list_name[-1] = 'male'
+                    female_name = '-'.join(list_name)
+                    club_names.append(female_name)
+                else:
+                    club_names.append(name + '-male')
         else:
             club_names = []
+            res_list = []
 
-            for last,name in list(zip(self.df['team'].str.split('-').str[-1], self.df['team'])):
+            for last, name in list(zip(self.df['team'].str.split('-').str[-1], self.df['team'])):
                 if last == 'Women':
                     list_name = name.split('-')
                     list_name[-1] = 'female'
                     female_name = '-'.join(list_name)
                     club_names.append(female_name)
                 else:
-                    club_names.append(name+'-female')
-            self.df['team'] = club_names
+                    club_names.append(name + '-female')
+
+        self.df['team_new_name'] = club_names
             # Add female for those without
 
-    # def marge_male_female(self):
-    #     self.df_male.drop(self.df_male.columns[self.df_male.columns.str.startswith('Unnamed')], axis=1, inplace=True)
-    #     self.df_female.drop(self.df_female.columns[self.df_female.columns.str.startswith('Unnamed')], axis=1, inplace=True)
-    #
-    #     players = pd.concat([self.df_male, self.df_female])
-    #     players.to_csv('../Data_files/csv files/players.csv')
-    def drop_add_columns(self):
+    def drop_columns(self):
         self.df.drop(self.df.columns[self.df.columns.str.startswith('Unnamed')], axis=1, inplace=True)
         self.df.drop(self.df[self.df['Player'] == 'Opponent Total'].index, inplace=True)
         self.df.drop(self.df[self.df['Player'] == 'Squad Total'].index, inplace=True)
+
+    def add_columns(self):
         self.df['Gender'] = self.gender
         year = list(pd.read_csv('../Data_files/csv files/backup_new.csv')['year'])[0]
         self.df['season'] = year
 
-
-
-
     def add_unique_id(self):
 
         def generate_id(row):
-            data = row['Player'] + row['Nation'] + row['Gender'] + row['Pos']
-            hashed = hashlib.sha256(data.encode())
+            relevant_data = row['Player'] + row['Nation'] + row['Gender'] + row['Pos']
+            hashed = hashlib.sha256(relevant_data.encode())
             return hashed.hexdigest()[:16]
 
         id_col = "ID"
@@ -455,16 +463,11 @@ class Dataprocessor_transform:
         self.df.to_csv(link_save)
 
 
-
-
-
 if __name__ == "__main__":
-
-    gender = 'female'
-    df_male = pd.read_csv("../Data_files/csv files/" + gender + ".csv")
+    gender_name = 'female'
+    df_male = pd.read_csv("../Data_files/csv files/" + gender_name + ".csv")
     df_male.drop(df_male.columns[df_male.columns.str.startswith('country_full_name')], axis=1, inplace=True)
-    data = Dataprocessor_transform(df_male, gender)
-    data.club_name_transform()
+    data = Dataprocessor_transform(df_male, gender_name)
     # data.pos_transform()
 
     # data.add_lat_long('../Data_files/csv files/locaiton_info_'+gender+'.csv', "Nation")
@@ -478,4 +481,3 @@ if __name__ == "__main__":
     # data.save_df_csv("../Data_files/csv files/" + gender + ".csv")
 
     # data.marge_male_female()
-
