@@ -29,6 +29,7 @@ class create_tables:
         """
         Constructor to load all the raw CSV files needed for processing.
         """
+        self.json_dict = {}
         self.table_dict = {}
         self.data_male = Dataprocessor_transform(df_male, 'male')
         self.data_female = Dataprocessor_transform(df_female, 'female')
@@ -37,7 +38,8 @@ class create_tables:
         self.concat_gender = pd.concat([self.data_male.df, self.data_female.df])
         self.file_teams = pd.read_csv('../Data_files/csv files/backup_new.csv')
         self.club_and_code = self.create_teams_table()[['club_name', 'new_club_name', 'club_code']]
-        self.file_players = self.concat_gender.merge(self.club_and_code, how='left', left_on='team_new_name', right_on='new_club_name')
+        self.file_players = self.concat_gender.merge(self.club_and_code, how='left', left_on='team_new_name',
+                                                     right_on='new_club_name')
         # self.club_code = self.get_club_code()
         self.DW_conn = DW_conn
         pass
@@ -253,7 +255,24 @@ class create_tables:
 
         db.execute_query(self.primary_key_query())
 
-    print('finish')
+
+    def load_elasticsearch(self):
+        self.craete_all_tables()
+        conn = Elasticsearch_conn()
+        for table_name, table in self.table_dict.items():
+            conn.load_data(table, table_name)
+
+
+    def load_data(self, list_sources=[]):
+        if 'postgres' in list_sources and 'elasticsearch' in list_sources:
+            self.load_postgresql()
+            self.load_elasticsearch()
+        elif 'postgres' in list_sources:
+            self.load_postgresql()
+        elif 'elasticsearch' in list_sources:
+            self.load_elasticsearch()
+        else:
+            print('no loading ')
 
 
 if __name__ == "__main__":
@@ -266,4 +285,5 @@ if __name__ == "__main__":
     # data.create_player_expected_table()
     # data.create_teams_table()
     # data.get_club_code()
-    data.load_postgresql()
+    # data.load_postgresql()
+    data.load_data(['elasticsearch'])
