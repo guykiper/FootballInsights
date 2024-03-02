@@ -1,4 +1,6 @@
 from elasticsearch import Elasticsearch
+from elasticsearch import helpers
+import elasticsearch
 import psycopg2
 import pandas as pd
 from io import StringIO
@@ -6,25 +8,56 @@ import re
 
 class Elasticsearch_conn:
 
-    def __init__(self, elastic_password, elastic_username, elastic_index_name):
+    def __init__(self, elastic_password='changeme', elastic_username='elastic'):
         self.elastic_password = elastic_password
         self.elastic_username = elastic_username
         self.elastic_path = "http://localhost:9200"
-        self.elastic_index_name = elastic_index_name
         self.client = Elasticsearch(
             self.elastic_path,
             verify_certs=False,
-            basic_auth=(self.elastic_username, self.elastic_password)
+            basic_auth=(self.elastic_username, self.elastic_password),
+            timeout=30
         )
 
+    def generate_mapping(self, dataframe):
+        mapping = {"properties": {}}
 
-    def load_data (self, list_doc):
-        for id_for_elastic, document in enumerate(list_doc):
+        for column, dtype in dataframe.dtypes.items():
+            if pd.api.types.is_integer_dtype(dtype):
+                mapping["properties"][column] = {"type": "integer"}
+            elif pd.api.types.is_float_dtype(dtype):
+                mapping["properties"][column] = {"type": "float"}
+            elif pd.api.types.is_bool_dtype(dtype):
+                mapping["properties"][column] = {"type": "boolean"}
+            elif pd.api.types.is_string_dtype(dtype):
+                mapping["properties"][column] = {"type": "keyword"}
+            else:
+                # You can handle other data types as needed
+                pass
+
+        return mapping
+
+    def load_data(self, dataframe, elastic_index_name):
+
+        # Handle NaN values
+        dataframe = dataframe.fillna(0)  # Replace NaN with 0, adjust as needed
+
+        # Generate mapping based on DataFrame
+        mapping = self.generate_mapping(dataframe)
+
+        # Create index with the generated mapping
+        self.client.indices.create(index=elastic_index_name, body={"mappings": mapping})
+
+        # Convert dataframe to docs
+        docs = dataframe.to_dict(orient="records")
+
+        # Index docs
+        for id_for_elastic, doc in enumerate(docs):
             self.client.index(
-                index=self.elastic_index_name,
-                body=document,
-                id=id_for_elastic,
-                )
+                index=elastic_index_name,
+                body=doc,
+                id=id_for_elastic
+            )
 
 
 class postgresql_conn:
