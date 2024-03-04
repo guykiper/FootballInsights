@@ -5,7 +5,8 @@ import psycopg2
 import pandas as pd
 from io import StringIO
 import re
-
+import subprocess
+import os
 class Elasticsearch_conn:
 
     def __init__(self, elastic_password='changeme', elastic_username='elastic'):
@@ -15,9 +16,28 @@ class Elasticsearch_conn:
         self.client = Elasticsearch(
             self.elastic_path,
             verify_certs=False,
-            basic_auth=(self.elastic_username, self.elastic_password),
-            timeout=30
+            basic_auth=(self.elastic_username, self.elastic_password)
         )
+
+    def check_connection(self):
+        try:
+            # Ping the Elasticsearch cluster
+            if self.client.ping():
+                return "Connected to Elasticsearch cluster."
+            else:
+                return "Failed to connect to Elasticsearch cluster."
+        except Exception as e:
+            return f"Error checking Elasticsearch connection: {e}"
+
+    def start_elasticsearch(self, path_file= '../Data_files/connections_info/elastic_and_kibana_connection.txt'):
+        """Start Elasticsearch and Kibana"""
+
+        with open(path_file) as f:
+
+            lines = f.readlines()
+            es_path = lines[0].strip()
+            os.system(f'"{es_path}"')
+
 
     def generate_mapping(self, dataframe):
         mapping = {"properties": {}}
@@ -59,6 +79,18 @@ class Elasticsearch_conn:
                 id=id_for_elastic
             )
 
+    def query_data(self, elastic_index_name, query):
+        """Execute a query on the indexed data"""
+        results = self.client.search(
+            index=elastic_index_name,
+            body={
+                "query": query
+            }
+        )
+
+        hits = results['hits']['hits']
+        return [hit["_source"] for hit in hits]
+
 
 class postgresql_conn:
 
@@ -66,17 +98,36 @@ class postgresql_conn:
         self.params_dict = params_dict
         self.conn = psycopg2.connect(**self.params_dict)
 
+    def check_connection(self):
+        try:
+            # Get the status of the connection
+            conn_status = self.conn.status
+
+            # Check if the connection is open
+            if conn_status == psycopg2.extensions.STATUS_READY:
+                return "Connected to PostgreSQL database."
+            else:
+                return "Failed to connect to PostgreSQL database."
+        except (Exception, psycopg2.Error) as error:
+            return f"Error checking PostgreSQL connection: {error}"
+        finally:
+            # Close the connection if it was opened
+            if self.conn:
+                self.conn.close()
+
     def connect(self):
         self.conn = psycopg2.connect(**self.params_dict)
         self.conn.autocommit = True
 
     def execute_query(self, list_query_text):
         cursor = self.conn.cursor()
+        results = []
         for query_text in list_query_text:
             cursor.execute(query_text)
-
+            results.append(pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description]))
         self.conn.commit()
         self.conn.close()
+        return results
 
     def load_df(self, df, table_name):
         """
@@ -119,22 +170,51 @@ class postgresql_conn:
         cur.copy_from(buffer, table_name, sep=",", null="\\N")  # Specify NULL representation for copy_from
 
 
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     # Connect
-    params = {
-        "host": "localhost",
-        "dbname": "postgres",
-        "user": "postgres",
-        "password": "1234"
-    }
-    db = postgresql_conn(params)
-    db.connect()
-    # df_try = pd.DataFrame({
-    #     'Column1': [1, 2, 3],
-    #     'Column2': ['a', 'b', 'c']
-    # })
-    # db.load_df(df_try, 'try')
-    name = '../Data_files/csv files/information_clubs.csv'
-    df_club = pd.read_csv(name).head()
-    df_club = df_club.iloc[:, 1:]
-    db.load_df(df_club,'club')
+    # params = {
+    #     "host": "localhost",
+    #     "dbname": "postgres",
+    #     "user": "postgres",
+    #     "password": "1234"
+    # }
+    # db = postgresql_conn(params)
+    # db.connect()
+    # list_query = db.execute_query(['SELECT * FROM public.players_info;'])
+    # print('finish')
+
+    es = Elasticsearch_conn()
+    es.check_connection()
+    # query = {"match_all":{}}
+    # res = es.query_data('players_per_90_minutes',query)
+    # print('finish')
+    # es.start_es_kibana(path_file="../Data_files/connections_info/elastic_and_kibana_connection.txt")
+    # Define the Elasticsearch command
+    # Run the command
+
+    # path_file = '../Data_files/connections_info/elastic_and_kibana_connection.txt'
+    #
+    # with open(path_file) as f:
+    #     lines = [line.strip() for line in f.readlines()]
+    #
+    # for line in lines:
+    #     try:
+    #         os.system(line)
+    #     except Exception as e:
+    #         try:
+    #             os.startfile(line)
+    #         except Exception as e:
+    #             print(f"Error executing or opening '{line}': {e}")
+    # elasticsearch_command = r'C:\Users\moodi\Desktop\guy\General Studies\udemy\Elastic Search\elasticsearch-8.7.1-windows-x86_64\elasticsearch-8.7.1\bin\elasticsearch.bat'
+    # #
+    # # # Run the command
+    # subprocess.run(elasticsearch_command, shell=True)
