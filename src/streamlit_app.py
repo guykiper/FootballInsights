@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from connections import postgresql_conn
+from connections import postgresql_conn, Elasticsearch_conn
 import json
 
 # Cache dataframes to avoid reloading
@@ -64,9 +64,71 @@ def plot_charts():
     return fig1, fig2, fig3
 
 
-def queries_page():
-    QUERY_HISTORY_FILE = "query_history.json"
+# def queries_page():
+#     QUERY_HISTORY_FILE = "Data_files/streamlit_app/query_history.json"
+#
+#     def load_query_history():
+#         try:
+#             with open(QUERY_HISTORY_FILE, "r") as f:
+#                 return json.load(f)
+#         except FileNotFoundError:
+#             return []
+#
+#     def save_query_history(query_history):
+#         with open(QUERY_HISTORY_FILE, "w") as f:
+#             json.dump(query_history, f)
+#
+#     query_history = load_query_history()
+#
+#     st.header("Queries")
+#
+#     # Display ERD image
+#     erd_image = "Data_files/ERD.drawio.png"
+#     st.image(erd_image, width=800)
+#
+#     # Query input box
+#     query = st.text_area("Enter a SQL query", height=200)
+#
+#
+#     if query:
+#
+#         query_history.append(query)
+#         save_query_history(query_history)
+#         try:
+#             params = {
+#                 "host": "localhost",
+#                 "dbname": "postgres",
+#                 "user": "postgres",
+#                 "password": "1234"
+#             }
+#             db = postgresql_conn(params)
+#             db.connect()
+#             results = db.execute_query([query])
+#         except Exception as e:
+#             st.error("Query failed: " + str(e))
+#         else:
+#             st.write("Results:", results[0])
+#
+#     if query_history:
+#         st.subheader("Past Queries:")
+#         for q in query_history:
+#             st.code(q)
+#
+#     if st.button("Clear History"):
+#         query_history = []
+#         save_query_history(query_history)
 
+def queries_page():
+    QUERY_HISTORY_FILE = "Data_files/streamlit_app/query_history.json"
+
+    params = {
+        "host": "localhost",
+        "dbname": "postgres",
+        "user": "postgres",
+        "password": "1234"
+    }
+    db = postgresql_conn(params)
+    es = Elasticsearch_conn()
     def load_query_history():
         try:
             with open(QUERY_HISTORY_FILE, "r") as f:
@@ -78,36 +140,49 @@ def queries_page():
         with open(QUERY_HISTORY_FILE, "w") as f:
             json.dump(query_history, f)
 
-    query_history = load_query_history()
 
+    query_history = load_query_history()
     st.header("Queries")
+
+    query_type = st.radio("Query Type", ["PostgreSQL", "Elasticsearch"])
 
     # Display ERD image
     erd_image = "Data_files/ERD.drawio.png"
     st.image(erd_image, width=800)
 
-    # Query input box
-    query = st.text_area("Enter a SQL query", height=200)
 
 
-    if query:
+    if query_type == "PostgreSQL":
 
-        query_history.append(query)
-        save_query_history(query_history)
+        if st.button("Check Elasticsearch Connection"):
+            connection_status = db.check_connection()
+            st.write(connection_status)
         try:
-            params = {
-                "host": "localhost",
-                "dbname": "postgres",
-                "user": "postgres",
-                "password": "1234"
-            }
-            db = postgresql_conn(params)
-            db.connect()
+            st.subheader("Enter the Query")
+            query = st.text_area("", height=200)
+            query_history.append(query)
+            save_query_history(query_history)
             results = db.execute_query([query])
         except Exception as e:
             st.error("Query failed: " + str(e))
         else:
-            st.write("Results:", results[0])
+            st.write(results[0])
+
+    elif query_type == "Elasticsearch":
+
+        if st.button("Check Elasticsearch Connection"):
+            connection_status = es.check_connection()
+            st.write(connection_status)
+
+        st.subheader("Index")
+        index = st.text_input("Enter index name")
+        st.subheader("Enter the Query")
+        query = st.text_area("", height=200)
+        query = json.loads(query)
+        query_history.append(query)
+        save_query_history(query_history)
+        results = es.query_data(index, query)
+        st.write(results)
 
     if query_history:
         st.subheader("Past Queries:")
