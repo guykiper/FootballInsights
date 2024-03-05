@@ -32,12 +32,22 @@ class Elasticsearch_conn:
     def start_elasticsearch(self, path_file= '../Data_files/connections_info/elastic_and_kibana_connection.txt'):
         """Start Elasticsearch and Kibana"""
 
-        with open(path_file) as f:
+        # with open(path_file) as f:
+        #
+        #     lines = f.readlines()
+        #     es_path = lines[0].strip()
+        #     os.system(f'"{es_path}"')
+        es_path = r'C:\Users\moodi\Desktop\guy\General Studies\udemy\Elastic Search\elasticsearch-8.7.1-windows-x86_64\elasticsearch-8.7.1\bin\elasticsearch.bat'
+        os.system(f'"{es_path}"')
+#C:\Users\moodi\Desktop\guy\General Studies\udemy\Elastic Search\elasticsearch-8.7.1-windows-x86_64\elasticsearch-8.7.1\bin\elasticsearch.bat
 
-            lines = f.readlines()
-            es_path = lines[0].strip()
-            os.system(f'"{es_path}"')
-
+    def get_indices(self):
+        try:
+            indices_data = self.client.cat.indices(format='json')
+            indices_list = [index_data['index'] for index_data in indices_data]
+            return indices_list
+        except Exception as e:
+            return f"Error getting indices: {e}"
 
     def generate_mapping(self, dataframe):
         mapping = {"properties": {}}
@@ -193,8 +203,11 @@ if __name__ == "__main__":
     # print('finish')
 
     es = Elasticsearch_conn()
-    es.check_connection()
+    # es.start_elasticsearch()
+    # es.check_connection()
     # query = {"match_all":{}}
+    res = es.get_indices()
+    print(res)
     # res = es.query_data('players_per_90_minutes',query)
     # print('finish')
     # es.start_es_kibana(path_file="../Data_files/connections_info/elastic_and_kibana_connection.txt")
