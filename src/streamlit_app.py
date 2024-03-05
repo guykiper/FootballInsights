@@ -154,7 +154,7 @@ def queries_page():
 
     if query_type == "PostgreSQL":
 
-        if st.button("Check Elasticsearch Connection"):
+        if st.button("Check PostgreSQL Connection"):
             connection_status = db.check_connection()
             st.write(connection_status)
         try:
@@ -174,8 +174,15 @@ def queries_page():
             connection_status = es.check_connection()
             st.write(connection_status)
 
+        if st.button("Start Elasticsearch"):
+            es.start_elasticsearch()
+            st.success("Elasticsearch started successfully!")
+
+        indices_list = es.get_indices()
+        # Display selectbox with indices
         st.subheader("Index")
-        index = st.text_input("Enter index name")
+        index = st.selectbox("Select Index", indices_list)
+        # index = st.text_input("Enter index name")
         st.subheader("Enter the Query")
         query = st.text_area("", height=200)
         query = json.loads(query)
