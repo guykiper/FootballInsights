@@ -7,6 +7,8 @@ from io import StringIO
 import re
 import subprocess
 import os
+
+
 class Elasticsearch_conn:
 
     def __init__(self, elastic_password='changeme', elastic_username='elastic'):
@@ -29,7 +31,7 @@ class Elasticsearch_conn:
         except Exception as e:
             return f"Error checking Elasticsearch connection: {e}"
 
-    def start_elasticsearch(self, path_file= '../Data_files/connections_info/elastic_and_kibana_connection.txt'):
+    def start_elasticsearch(self, path_file='../Data_files/connections_info/elastic_and_kibana_connection.txt'):
         """Start Elasticsearch and Kibana"""
 
         # with open(path_file) as f:
@@ -39,7 +41,8 @@ class Elasticsearch_conn:
         #     os.system(f'"{es_path}"')
         es_path = r'C:\Users\moodi\Desktop\guy\General Studies\udemy\Elastic Search\elasticsearch-8.7.1-windows-x86_64\elasticsearch-8.7.1\bin\elasticsearch.bat'
         os.system(f'"{es_path}"')
-#C:\Users\moodi\Desktop\guy\General Studies\udemy\Elastic Search\elasticsearch-8.7.1-windows-x86_64\elasticsearch-8.7.1\bin\elasticsearch.bat
+
+    # C:\Users\moodi\Desktop\guy\General Studies\udemy\Elastic Search\elasticsearch-8.7.1-windows-x86_64\elasticsearch-8.7.1\bin\elasticsearch.bat
 
     def get_indices(self):
         try:
@@ -180,34 +183,27 @@ class postgresql_conn:
         cur.copy_from(buffer, table_name, sep=",", null="\\N")  # Specify NULL representation for copy_from
 
 
-
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
     # Connect
-    # params = {
-    #     "host": "localhost",
-    #     "dbname": "postgres",
-    #     "user": "postgres",
-    #     "password": "1234"
-    # }
-    # db = postgresql_conn(params)
+    params = {
+        "host": "localhost",
+        "dbname": "postgres",
+        "user": "postgres",
+        "password": "1234"
+    }
+    db = postgresql_conn(params)
+    res = db.execute_query(["select id, player from players_info"])
+    print(res)
     # db.connect()
     # list_query = db.execute_query(['SELECT * FROM public.players_info;'])
     # print('finish')
 
-    es = Elasticsearch_conn()
+    # es = Elasticsearch_conn()
     # es.start_elasticsearch()
     # es.check_connection()
     # query = {"match_all":{}}
-    res = es.get_indices()
-    print(res)
+    # res = es.get_indices()
+    # print(res)
     # res = es.query_data('players_per_90_minutes',query)
     # print('finish')
     # es.start_es_kibana(path_file="../Data_files/connections_info/elastic_and_kibana_connection.txt")
