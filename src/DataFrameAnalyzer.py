@@ -5,6 +5,7 @@ import shapely.geometry
 from sklearn.cluster import KMeans
 import plotly.graph_objects as go
 import plotly.express as px
+from connections import postgresql_conn
 
 class DataFrameAnalyzer:
     """
@@ -110,7 +111,11 @@ class DataFrameAnalyzer:
 
         fig.add_trace(
             go.Scatterpolar(
-                r=values[0], theta=attributes, fill="toself", name="Player 1:"+str(player1)+" -"
+                r=values[0],
+                theta=attributes,
+                fill="toself",
+                name="Player 1:"+str(player1)+" -",
+                line= dict(color='red')
             )
         )
         fig.add_trace(
@@ -148,17 +153,32 @@ class DataFrameAnalyzer:
         # let's use the areas in the name of the traces
         fig.for_each_trace(lambda t: t.update(name=f"{t.name} {df_a.loc[t.name]:.1f}"))
 
-        fig.show()
+        return fig
 
 
-    def create_radar_chart_plotly(self, row_index1, row_index2):
+
+
+    def create_radar_chart_plotly(self, id_player_1, id_player_2):
         """
         :param row_index1: the index of the first player we want to compare
         :param row_index2: the index of the second player we want to compare
         we create two plots, for the performance columns type and for the per 90 columns type
         """
-        name_player1 = self.dataframe.loc[row_index1, 'Player']
-        name_player2 = self.dataframe.loc[row_index2, 'Player']
+        params = {
+            "host": "localhost",
+            "dbname": "postgres",
+            "user": "postgres",
+            "password": "1234"
+        }
+        db = postgresql_conn(params)
+        name_player1 = list(self.dataframe[self.dataframe['id'] == id_player_1]['player'])[0]
+        name_player2 = list(self.dataframe[self.dataframe['id'] == id_player_2]['player'])[0]
+        dataframes_players = db.execute_query([
+            "select * from players_performance",
+            "select * from players_per_90_minutes",
+            "select * from players_expected ",
+            "select * from Players_playing_time"
+        ])
 
         attribute_types = {
             'performance': 'Performance',
@@ -166,25 +186,46 @@ class DataFrameAnalyzer:
             'progression': 'Progression',
             'expected': 'Expected'
         }
+        figs_list = []
+        for df_player in dataframes_players:
+            relevant_attributes_player_1 = df_player[df_player['id'] == id_player_1].iloc[:, 3:]
+            df_values_player_1 = relevant_attributes_player_1.values[0]
+            df_values_player_1 = np.nan_to_num(df_values_player_1, nan=0.0)
+            relevant_attributes_player_2 = df_player[df_player['id'] == id_player_2].iloc[:, 3:]
+            df_values_player_2 = relevant_attributes_player_2.values[0]
+            df_values_player_2 = np.nan_to_num(df_values_player_2, nan=0.0)
+            figs_list.append(self.pattern_rader_plotly(relevant_attributes_player_1.columns, [df_values_player_1, df_values_player_2], name_player1, name_player2))
 
-        for attribute_type, attribute_prefix in attribute_types.items():
-            attributes = [col for col in self.dataframe.columns[5:-2] if col.startswith(attribute_prefix)]
-            if not attributes:
-                continue  # Skip if there are no attributes of this type
+        return figs_list
 
-            player1_values = list(self.dataframe.loc[row_index1, attributes])
-            player1_values = list(np.nan_to_num(player1_values, nan=0.0))
-            player2_values = list(self.dataframe.loc[row_index2, attributes])
-            player2_values = list(np.nan_to_num(player2_values, nan=0.0))
-            self.pattern_rader_plotly(attributes, [player1_values, player2_values], name_player1, name_player2)
 
 
 if __name__ == '__main__':
+    params = {
+        "host": "localhost",
+        "dbname": "postgres",
+        "user": "postgres",
+        "password": "1234"
+    }
+    db = postgresql_conn(params)
+    df = db.execute_query(['select * from players_info'])[0]
+    analyzer_male = DataFrameAnalyzer(df, 'male')
+    res = analyzer_male.create_radar_chart_plotly('b7b99c6e07a7fe4c', 'defa5ab54986ba65')
+    for fig in res:
+        fig.show()
 
-    male_data = pd.read_csv('../Data_files/male.csv')
-    analyzer_male = DataFrameAnalyzer(male_data, 'male')
-    analyzer_male.create_radar_chart_plotly(row_index1=33641, row_index2=32857)
-
+    # data = {'Category': ['A', 'B', 'C', 'D', 'E'],
+    #         'Value1': [5, 3, 8, 2, 6],
+    #         'Value2': [4, 6, 3, 7, 2]}
+    # df = pd.DataFrame(data)
+    #
+    # # Create a radar chart for the first row
+    # row_index = 0
+    # DFA = DataFrameAnalyzer(df)
+    # fig = DFA.create_radar_chart(row_index)
+    #
+    # # Display the chart
+    # plt.show()
     # female_data = pd.read_csv('Data_files/female.csv')
     # analyzer_female = DataFrameAnalyzer(female_data, 'female')
     # analyzer_female.create_radar_chart_plotly(row_index1=28, row_index2=29)
